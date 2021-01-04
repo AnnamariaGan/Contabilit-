@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<jnlp spec="1.0" xmlns:jfx="http://javafx.com" href="Contabilità.jnlp">
+  <information>
+    <title>Contabilità</title>
+    <vendor>annam</vendor>
+    <description>null</description>
+    <offline-allowed/>
+  </information>
+  <resources>
+    <jfx:javafx-runtime version="8.0+" href="http://javadl.sun.com/webapps/download/GetFile/javafx-latest/windows-i586/javafx2.jnlp"/>
+  </resources>
+  <resources>
+    <j2se version="1.6+" href="http://java.sun.com/products/autodl/j2se"/>
+    <jar href="Contabilità.jar" size="23091" download="eager" />
+    <jar href="lib/mysql-connector-java-5.1.34-bin.jar" size="960374" download="eager" />
+    <jar href="lib/xstream-1.4.7.jar" size="531571" download="eager" />
+  </resources>
+  <applet-desc  width="800" height="600" main-class="com.javafx.main.NoJavaFXFallback"  name="Contabilità" >
+    <param name="requiredFXVersion" value="8.0+"/>
+  </applet-desc>
+  <jfx:javafx-desc  width="800" height="600" main-class="contabilità.Contabilità"  name="Contabilità" />
+  <update check="always"/>
+</jnlp>
