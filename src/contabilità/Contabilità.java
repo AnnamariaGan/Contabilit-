@@ -20,6 +20,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import javafx.util.Callback;
 
 public class Contabilità extends Application {  //01
  
@@ -52,16 +53,44 @@ public class Contabilità extends Application {  //01
     
     Movimento daCancellare = null;
     
+    boolean validaMail(String email) { 
+            int atIndex = email.indexOf('@');
+            int dotIndex = email.indexOf('.',atIndex);
+            
+            if(atIndex != -1 && dotIndex != -1 && dotIndex < email.length()-1){
+               return true;
+            }else{
+                System.out.println("email non valida, riprova");
+            }
+            
+            return false;    
+    }
+    
     @Override
     public void start(Stage primaryStage) { //03
-    
-        Contabilità cont = this;//new Contabilità(); //04
-        Controller ctrl = new Controller(cont);
-        //ArchivioMov archivio = new ArchivioMov(ctrl.config.getIpDB(), ctrl.config.getPortaDB());
         
-        ctrl.accensione(ctrl.config.getIpClient(), ctrl.config.getIpServer(), 
-             ctrl.config.getPortaServer(), cont, "configurazione.xml", "configurazione.xsd");
-       
+        
+        ObservableList<PieChart.Data> valueList;  //14
+        valueList = FXCollections.observableArrayList( 
+             new PieChart.Data("Stipendio",10),   
+             new PieChart.Data("Altro",10),     
+             new PieChart.Data("Affitto",10 ),
+             new PieChart.Data("Viaggi",10 ),
+             new PieChart.Data("Cure mediche",10),
+             new PieChart.Data("Spesa",10)   //parametri di default
+         );  
+
+        PieChart pieChart = new PieChart(valueList); //15
+        pieChart.getData().forEach(dato -> {
+            String percentage = String.format("%.2f%%", (dato.getPieValue() / 100));
+            Tooltip toolTip = new Tooltip(percentage);
+            Tooltip.install(dato.getNode(), toolTip);
+        });
+
+    
+        Contabilità cont = this; //04
+        Controller ctrl = new Controller(cont);
+        ArchivioMov archivio = new ArchivioMov(ctrl.config.getIpDB(), ctrl.config.getPortaDB());
         
         dataFine.setValue(LocalDate.now()); // 06)
         dataInizio.setValue(LocalDate.now().plusDays(-30));
@@ -74,7 +103,8 @@ public class Contabilità extends Application {  //01
        
         Label SaldoAVideo = new Label("SALDO: ");
         SaldoAVideo.setFont(new Font(ctrl.config.getFont(), 16));
-      
+        
+        //ObservableStringValue saldoAttualeOb = new ObservableStringValue(saldoAttuale);
         Label SaldoDaMostrare = new Label(saldoAttuale); 
         SaldoDaMostrare.setFont(new Font(ctrl.config.getFont(),16));
        
@@ -103,13 +133,28 @@ public class Contabilità extends Application {  //01
         cancella.setOnAction(new EventHandler<ActionEvent>() { //07
             @Override 
             public void handle(ActionEvent e) {
-                if(daCancellare != null)
-                 ;//   archivio.deleteMovimento(daCancellare, voci); //la voce selezionata
-                
-                saldoAttuale = "0";
-                //archivio.calcolaSaldo(mail.getText()) + "  €";
-                ctrl.gestorelog.creaLog("cancella", ctrl.config.getIpClient(), ctrl.config.getIpServer(),  ctrl.config.getPortaServer());
-               
+                if(daCancellare != null) {
+                    
+                    archivio.deleteMovimento(daCancellare, voci, valueList); //la voce selezionata
+                    voci.remove(daCancellare);
+                    //tabella.getItems().removeAll(daCancellare);
+                    //saldoAttuale = "0";
+                    saldoAttuale = archivio.calcolaSaldo(mail.getText()) + " €";
+                    SaldoDaMostrare.setText(saldoAttuale);
+                    tabella.getItems().clear();
+                    archivio.loadMovimento(voci, mail.getText(),
+                                dataInizio.getValue(), dataFine.getValue(),
+                                valueList);
+                    
+                    ctrl.gestorelog.creaLog("cancella", 
+                        ctrl.config.getIpClient(), ctrl.config.getIpServer(),
+                        ctrl.config.getPortaServer());
+                    
+                    System.out.println("cancella handled");
+                    cancella.setDisable(true);
+                } else {
+                    System.out.println("daCancellare = null");
+                }              
             }
         });
         
@@ -119,21 +164,40 @@ public class Contabilità extends Application {  //01
             @Override 
             public void handle(ActionEvent e) {
                 String utente = mail.getText();
+                validaMail(utente);
+                // TO DO: aggiungere l'utente al db se non e` presente
                 String tipo = "u";
-                if( entrata.isSelected() == true){
+                if( entrata.isSelected() ){
                     tipo = "e";
                 }
                 String voce = (String) cbVoce.getValue(); //conevrtito in stringa
-                double imp = Double.parseDouble(importo.getText());
-                String date = dataNewMov.getValue().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-            
-                Movimento newMov = new Movimento(date, imp, voce, utente, tipo);  
-               
-                //archivio.setMovimento(newMov, voci);
-                saldoAttuale = "0";// archivio.calcolaSaldo(utente) + " €";
                 
-                ctrl.gestorelog.creaLog("inserisci", ctrl.config.getIpClient(), 
-                    ctrl.config.getIpServer(),  ctrl.config.getPortaServer());
+                try {
+                    // TO DO: handle eventually $ or eur users' inputs
+                    double imp = Double.parseDouble(importo.getText());;
+                    String date = dataNewMov.getValue()
+                            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                    Movimento newMov = new Movimento(date, imp, voce, utente,
+                            tipo);
+                    
+                    archivio.setMovimento(newMov, voci, valueList);
+                    saldoAttuale = archivio.calcolaSaldo(utente) + " €";
+                    SaldoDaMostrare.setText(saldoAttuale);
+                    
+                    tabella.getItems().clear();
+                    archivio.loadMovimento(voci, mail.getText(),
+                                dataInizio.getValue(), dataFine.getValue(),
+                                valueList);
+                   
+                    ctrl.gestorelog.creaLog("inserisci", ctrl.config
+                            .getIpClient(), ctrl.config.getIpServer(),
+                            ctrl.config.getPortaServer());
+                    
+                } catch (NullPointerException 
+                        | NumberFormatException exception) {
+                    System.out.println(exception.getMessage());
+                    exception.printStackTrace();
+                };
             }
         });
 
@@ -144,10 +208,14 @@ public class Contabilità extends Application {  //01
             public void handle(ActionEvent e) {
                 dataFine.setValue(LocalDate.now());
                 dataInizio.setValue(LocalDate.now().plusDays(-30));
-                //deve svuotare anche la tabella
-                 saldoAttuale =  "0.00 €";
+                tabella.getItems().clear();
+                pieChart.getData().clear();
+                saldoAttuale =  "0.00 €";
+                SaldoDaMostrare.setText(saldoAttuale);
+                mail.clear();
                 
-                ctrl.gestorelog.creaLog("svuota", ctrl.config.getIpClient(), ctrl.config.getIpServer(),  ctrl.config.getPortaServer());
+                ctrl.gestorelog.creaLog("svuota", ctrl.config.getIpClient(),
+                    ctrl.config.getIpServer(),  ctrl.config.getPortaServer());
              
             }
         });
@@ -169,19 +237,26 @@ public class Contabilità extends Application {  //01
              }
          });
         
+        
         mail.setOnKeyPressed(new EventHandler<KeyEvent>(){ //11
            @Override 
             public void handle(KeyEvent kevent){
                 if(kevent.getCode().equals(KeyCode.ENTER)){
                     String email = mail.getText();
-                    int atIndex = email.indexOf('@');
-                    int dotIndex = email.indexOf('.',atIndex);
-                    if(atIndex != -1 && dotIndex != -1 && dotIndex < email.length()-1){
-                       //archivio.loadMovimento(voci,email, dataInizio.getValue(), dataFine.getValue());
-                        saldoAttuale = "0";//archivio.calcolaSaldo(mail.getText()+ " €");
-                    }else{
-                        System.out.println("email non valida, riprova");
+                    // svuota in ogni caso la tabella
+                    tabella.getItems().clear();
+                    if (validaMail(email)) {
+                        // precondizione: dataInizio e dataFine dovrebbero
+                        // gia` essere not null
+                        archivio.loadMovimento(voci, email,
+                                dataInizio.getValue(), dataFine.getValue(),
+                                valueList);
+                        saldoAttuale = archivio.calcolaSaldo(mail.getText())
+                                + " €";
+                        SaldoDaMostrare.setText(saldoAttuale);
+                        
                     }
+               
                 } 
             } 
         });
@@ -189,36 +264,49 @@ public class Contabilità extends Application {  //01
         TableColumn dataCol = new TableColumn("DATA");     //12
         dataCol.setCellValueFactory(new PropertyValueFactory<>("data"));
         TableColumn categoriaCol = new TableColumn("CATEGORIA");
-        categoriaCol.setCellValueFactory(new PropertyValueFactory<>("categoria"));
+        categoriaCol.setCellValueFactory(new PropertyValueFactory<>("voce"));
+        
         TableColumn importoCol = new TableColumn("IMPORTO");
         importoCol.setCellValueFactory(new PropertyValueFactory<>("importo"));
        
         dataCol.setPrefWidth(150); //13
         categoriaCol.setPrefWidth(165);
         importoCol.setPrefWidth(150);
-        
+       
         tabella.getColumns().addAll(dataCol, categoriaCol, importoCol);
+        
+        importoCol.setCellFactory(column -> {
+            return new TableCell<Movimento, Double>() {
+                @Override
+                protected void updateItem(Double item, boolean empty) {
+                    super.updateItem(item, empty); 
+                    if (item == null || empty) {
+                    //If the cell is empty
+                        setText(null);
+                        setStyle("");
+                    } else { 
+                    //If the cell is not empty
+                        setText(item.toString()); 
+                    //getting info of this row's Movimento
+                        Movimento mov = getTableView().getItems()
+                        .get(getIndex());
+                        //System.out.println(mov);
+
+                        if (mov.getTipo().equals("u")) {
+                            //System.out.println(mov.getTipo());
+                            setTextFill(Color.RED);                                                   
+                        } else {
+                            //System.out.println(mov.getTipo());
+                            setTextFill(Color.GREEN);
+                        }                                                                                                                                                                                                    
+                    }
+                }
+            };
+        });
       //  tabella.lookup(".scroll-bar:vertical");
       //  tabella.setStyle(ctrl.config.getColor());
       //  impostare il numro di rghe presneti in tabella con congif
   
-        ObservableList<PieChart.Data> valueList;  //14
-        valueList = FXCollections.observableArrayList( 
-             new PieChart.Data("Stipendio",10),   
-             new PieChart.Data("Altro",10),     
-             new PieChart.Data("Affitto",10 ),
-             new PieChart.Data("Viaggi",10 ),
-             new PieChart.Data("Cure mediche",10),
-             new PieChart.Data("Spesa",10)   //parametri di default
-         );  
-
-        PieChart pieChart = new PieChart(valueList); //15
-        pieChart.getData().forEach(dato -> {
-            String percentage = String.format("%.2f%%", (dato.getPieValue() / 100));
-            Tooltip toolTip = new Tooltip(percentage);
-            Tooltip.install(dato.getNode(), toolTip);
-        });
-
         GridPane root = new GridPane(); //16
         root.add(email, 0, 0);
         root.add(mail, 1, 0);
@@ -252,18 +340,28 @@ public class Contabilità extends Application {  //01
         primaryStage.setOnCloseRequest((WindowEvent we) -> { //19
           ctrl.chiusura(cont, ctrl.config.getIpClient(), ctrl.config.getIpServer(), 
                    ctrl.config.getPortaServer()); //20
+          System.out.println("Closing...");
         });
+        
+        tabella.setOnMousePressed(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent e) {
+                if (e.isPrimaryButtonDown() && e.getClickCount() == 2) {
+                    cancella.setDisable(false);
+                    daCancellare = (Movimento) tabella.getSelectionModel()
+                            .getSelectedItem();
+                    
+                    System.out.println("double click");
+                    
+                }
+            }
+        });
+        
+        ctrl.accensione(ctrl.config.getIpClient(), ctrl.config.getIpServer(), 
+                ctrl.config.getPortaServer(), cont, "configurazione.xml", 
+                "configurazione.xsd").prelevaBin(this);
      }
- 
-    public Movimento onTableDoubleClick(MouseEvent me){ //21
-            if(me.getClickCount() == 2){
-                cancella.setDisable(false);
-                daCancellare = (Movimento) tabella.getSelectionModel().getSelectedItem();
-            }  
-            return daCancellare;
-        }; 
-     
-}
+   }
 
 /*
 Note:

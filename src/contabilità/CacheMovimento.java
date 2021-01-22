@@ -1,5 +1,6 @@
  package contabilità;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -79,15 +80,31 @@ public class CacheMovimento implements Serializable{
     public void setTipo(String t){tipo = t;}
     public void setImporto(String i){importo = i;}
     
+    boolean createFile(String fileName) {
+        try {
+            File file = new File(fileName);
+            boolean ret = file.createNewFile(); 
+            if (ret)
+                System.out.println("Cache create con successo.");
+            else
+                System.out.println("Errore creazione file Cache.");
+            return ret;
+        } catch (IOException e) {
+            System.out.println("createFile error occurred");
+            e.printStackTrace();
+            return false;
+        }
+    }
    
     // percorso C:\Users\annam\Desktop\ProgettoContabilita\cache.bin <<< no: 
     //  ...\annam\Documenti\Contabilità\cache.bin al momento
     void saveBin(Contabilità cont) {
+        createFile("./cache.bin");
         try ( FileOutputStream fout = new FileOutputStream("./cache.bin");//ProgettoContabilita/cache.bin");
             ObjectOutputStream oout = new ObjectOutputStream(fout);) {
-           oout.writeObject( new CacheMovimento(cont));
-        } catch (IOException ex) {
-             System.out.println(ex.getMessage());
+            oout.writeObject( new CacheMovimento(cont));
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
         }
    }
 
@@ -106,16 +123,18 @@ public class CacheMovimento implements Serializable{
             cont.mail.setText(email);
             cont.cbVoce.setValue(voce);
             
-            if(tipo == "e")
+            if(tipo.equals("e"))
                 cont.entrata.setSelected(true);
             else
                 cont.uscita.setSelected(true);
-
+            return;
         } catch (IOException | ClassNotFoundException ex) {
             System.out.println(ex.getMessage());
+        } finally {
+            //cont = null;
         }
    }
-/*
+
    void conservaTxt(Contabilità cont) {
         String x = new CacheMovimento(cont).toString();
         try { 
@@ -124,7 +143,7 @@ public class CacheMovimento implements Serializable{
             System.out.println(ex.getMessage());
         }
    }
-
+/*
    //era private ora public
     public void prelevaTxt(Contabilità cont) {
         try { 

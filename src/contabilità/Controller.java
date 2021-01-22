@@ -5,24 +5,26 @@ public class Controller {
     public CacheMovimento cacheMov;
     
     public ConfigurazioneXML config;
-    public GestoreLogXML gestorelog;
+    public static GestoreLogXML gestorelog;
     
    Controller(Contabilità cont){
         cacheMov = new CacheMovimento(cont);
         config = new ConfigurazioneXML(null,null);
-      //  gestorelog = null;
+        gestorelog = new GestoreLogXML();
     }
    
-    public void accensione(String ipClient,String ipServer,int portaServer, Contabilità cont, String xml, String xsd){
+    public CacheMovimento accensione(String ipClient, String ipServer,
+            int portaServer, Contabilità cont, String xml, String xsd){
         
         cacheMov.prelevaBin(cont);
         cacheMov.saveBin(cont); 
                 
-      //  cacheMov.conservaTxt(cont);   
+        cacheMov.conservaTxt(cont);   
         
         config = new ConfigurazioneXML(xml, xsd);
        
         //gestorelog.creaLog("accensione", ipClient, ipServer,  portaServer);
+        return this.cacheMov;
     }
 
     public void chiusura(Contabilità cont,String ipClient,String ipServer,int portaServer ){ 

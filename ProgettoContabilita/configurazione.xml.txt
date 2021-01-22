@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- configurazione.xml-->
+
+<ConfigurazioneXML>
+	<dimTesto>12</dimTesto>
+	<numRighe>16</numRighe>
+	<dimAltezza>650</dimAltezza>
+	<dimLarghezza>790</dimLarghezza>
+	<portaServer>6798</portaServer>
+	<portaDatabase>3306</portaDatabase>
+	<font>futura</font>
+	<coloreBackground>WHITE</coloreBackground>
+	<ipServer>127.0.0.1</ipServer>
+	<ipDatabase>127.0.0.1</ipDatabase>
+	<ipClient>127.0.0.1</ipClient>
+</ConfigurazioneXML>

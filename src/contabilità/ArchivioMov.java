@@ -10,11 +10,12 @@ import java.time.LocalDate;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.chart.PieChart;
+import javafx.scene.control.Tooltip;
 
 public class ArchivioMov { //01
     private static Connection co;
     private static Statement st;
-    private static ObservableList<Movimento> mov;
+    //private static ObservableList<Movimento> mov;
     
     public ArchivioMov(String ip, int porta) { //02
         try{
@@ -22,75 +23,90 @@ public class ArchivioMov { //01
                      + ip
                      + ":"
                      + porta
-                     + "/contabilita_personale", "root","");
+                     + "/contabilita", "root","");
             st = co.createStatement();
-        }catch(SQLException e){System.err.println("connessione non riuscita" +
-                 e.getMessage() );}
+        }catch(SQLException e){
+            System.err.println(
+                "connessione non riuscita" +
+                 e.getMessage()
+            );
+        }
     } 
     
-    public void loadMovimento(ObservableList<Movimento> voci,String nomeUtente, LocalDate dataInizio, LocalDate dataFine){ //03
-        String queryString = "SELECT *"
-                + "FROM movimento"
-                + " WHERE nomeutente = ?"
-                + "AND data BETWEEN ? AND ?"; 
+    public void loadMovimento(ObservableList<Movimento> voci, String nomeUtente, 
+            LocalDate dataInizio, LocalDate dataFine, 
+             ObservableList<PieChart.Data> ol) { //03
+        String queryStr = "SELECT * FROM movimento WHERE nomeUtente = ? "
+                + " AND data BETWEEN ? AND ? ;";
+               
         try(  
-            PreparedStatement prepStat = co.prepareStatement(queryString); //04
-        ){
-            prepStat.setString(1, nomeUtente); //05
-            prepStat.setDate(2, java.sql.Date.valueOf(dataInizio)); 
-            prepStat.setDate(3, java.sql.Date.valueOf(dataFine)); 
+            PreparedStatement prepStatm = co.prepareStatement(queryStr); //04
+        ) {
+            System.out.println(nomeUtente);
+            prepStatm.setString(1, nomeUtente); //05
+            prepStatm.setDate(2, java.sql.Date.valueOf(dataInizio)); 
+            prepStatm.setDate(3, java.sql.Date.valueOf(dataFine)); 
             
-            ResultSet rs = prepStat.executeQuery(); //06
-            st.executeQuery(queryString); 
+            ResultSet rs = prepStatm.executeQuery(); //06
+            //st.executeQuery(queryStr+ "'"+nomeUtente+"';"); 
             while(rs.next()) {
-                voci.add( new Movimento(rs.getString("data"), rs.getDouble("importo"),
-                                        rs.getString("voce"), rs.getString("email"),
-                                        rs.getString("tipo"))
-                    );
+                voci.add(
+                    new Movimento(rs.getString("data"), rs.getDouble("importo"),
+                        rs.getString("voce"), rs.getString("nomeutente"), 
+                        rs.getString("tipo")
+                    )
+                );
             }
-           loadGrafico(nomeUtente,dataInizio , dataFine); 
-          }catch (SQLException e) {
-              System.err.println(e.getMessage());
-          }
-    }  
+            System.out.println("loadMovimento succesful");
+            
+            loadGrafico(nomeUtente, dataInizio, dataFine, ol);
+        } catch (NullPointerException | SQLException e) {
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+        }
+    }   
     
      public String calcolaSaldo(String mail){ //07
         try(
-          PreparedStatement ps = co.prepareStatement( //08
-                "set @entrate = (select sum(importo) as entrate\n" +
-                                    "from movimento\n" +
-                                    " where nomeutente = ?"
-                                           + " and tipo = 'e');\n" +
-                         "\n" +
-                "set @uscite = (select sum(importo) as uscite\n" +
-                                " from movimento \n" +
-                                " where nomeutente = ?"
-                                        + " and tipo = 'u');\n" +
-                        "\n" +
-                        "\n" +
-                "set @saldo = @entrate - @uscite;\n" +
-                        "\n" +
-                "select @saldo");  
+            PreparedStatement ps = co.prepareStatement( //08
+                "SELECT tipo, SUM(importo) as partial" 
+                    + " from movimento " 
+                    + " where nomeutente = ? "
+                    + " GROUP BY tipo ORDER BY tipo"
+            );        
         ){
-            ps.setString(1,mail );
-            ps.setString(2,mail );
-            
+            ps.setString(1, mail);
             ResultSet rs = ps.executeQuery(); //09
-            System.out.println("rows affected" + rs);
-            String sld = Double.toString(rs.getDouble("saldo"));
-            return sld;
+            System.out.println("calcola saldo:");// + rs.getString("saldo"));
+            Double sld = 0.0;
+            
+            while (rs.next()) {
+                if (rs.getString("tipo").equals("e")) {
+                    sld += rs.getDouble("partial");
+                    //System.out.println("e entered");
+                } else {
+                    sld -= rs.getDouble("partial");
+                }
+                //System.out.println(sld);
+                //System.out.println(rs.getString("tipo"));                
+            }
+            
+            String sldStr = sld.toString();
+            System.out.println(sldStr);
+            return sldStr;
         }catch (SQLException e){
             System.err.println(e.getMessage());
+            e.printStackTrace();
+            return "50/D1";
         }
-        
-        return "0.00";
     } 
     
-    public void deleteMovimento(Movimento mv,ObservableList<Movimento> voci){ //10
+    public void deleteMovimento(Movimento mv,ObservableList<Movimento> voci, 
+             ObservableList<PieChart.Data> ol) { //10
         try( //questa query cancella tutte le righe con quelle proprieta
-            PreparedStatement ps = co.prepareStatement("DELETE FROM movimento"  //11
-                        + " WHERE nomeutente = ? AND importo = ? AND data = ?"
-                        + "AND voce = ? AND tipo = ?"); 
+            PreparedStatement ps = co.prepareStatement(
+                "DELETE FROM movimento WHERE nomeutente = ? AND importo = ? "
+                + "AND data = ? AND voce = ? AND tipo = ? LIMIT 1;"); //11
         ){
            ps.setString(1, mv.getEmail());
            ps.setDouble(2, mv.getImporto());
@@ -100,23 +116,26 @@ public class ArchivioMov { //01
           
            System.out.println("rows affected: " + ps.executeUpdate());
            
+           /*
            LocalDate inizio = LocalDate.now();
            LocalDate fine = LocalDate.now().plusDays(-30);
-        //  voci.remove(); //dalla observable list devo pero togliere la voce che ho eliminato
-           loadMovimento(voci, mv.getEmail(),inizio, fine ); 
-           loadGrafico(mv.getEmail(),inizio , fine);
-           calcolaSaldo(mv.getEmail());
-        }catch (SQLException e){
+           voci.remove(mv); //dalla observable list devo pero togliere la voce che ho eliminato
+           */
+           //loadMovimento(voci, mv.getEmail(),inizio, fine, ol);// pieChart); 
+           //loadGrafico(mv.getEmail(),inizio , fine, ol);//pieChart);
+           //calcolaSaldo(mv.getEmail());
+        } catch (SQLException e){
             System.err.println(e.getMessage());
+            e.printStackTrace();
         }
     }
     
-    public void setMovimento(Movimento mv,ObservableList<Movimento> voci){ //12
+    public void setMovimento(Movimento mv, ObservableList<Movimento> voci, 
+            ObservableList<PieChart.Data> ol) { //12
         try( 
           PreparedStatement ps = co.prepareStatement( //13
-                  "INSERT INTO movimento(nomeutente, importo, data, voce, tipo)"
-                          + " VAlUES(?,?,?,?,?)");  
-               
+                "INSERT INTO movimento(nomeutente, importo, data, voce, tipo)"
+                + " VAlUES(?,?,?,?,?);");     
         ){
             ps.setString(1, mv.getEmail()); 
             ps.setDouble(2,mv.getImporto() );
@@ -125,22 +144,22 @@ public class ArchivioMov { //01
             ps.setString(5, mv.getTipo());
             
             System.out.println("rows affected" + ps.executeUpdate());
-            
-            LocalDate inizio = LocalDate.now();
-            LocalDate fine = LocalDate.now().plusDays(-30);
-            loadMovimento(voci, mv.getEmail(),inizio, fine );  
-            loadGrafico(mv.getEmail(),inizio , fine);
-        }catch (SQLException e){System.err.println( e.getMessage());}
+        } catch (SQLException e){
+            System.err.println( e.getMessage());
+            e.printStackTrace();
+        }
     }  
     
-     public void loadGrafico(String nomeUtente,   //14
-            LocalDate dataInizio, LocalDate dataFine){
-        ObservableList<PieChart.Data> ol = FXCollections.observableArrayList();
-        String queryString = "SELECT voce, SUM(importo) as totale" //15
-                + "FROM movimento"
-                + "WHERE nomeutente = ?" 
-                + "AND data BETWEEN ? AND ?" 
-                + "GROUP BY voce";
+     public void loadGrafico(String nomeUtente,LocalDate dataInizio, 
+            LocalDate dataFine, ObservableList<PieChart.Data> ol){ //14
+        ObservableList<PieChart.Data> olNew = 
+                FXCollections.observableArrayList();
+        String queryString = "SELECT voce, SUM(importo) as totale " //15
+                + " FROM movimento "
+                + " WHERE nomeutente = ? " 
+                + " AND data BETWEEN ? AND ? " 
+                + " GROUP BY voce;";
+            // + " ORDER BY voce;";
         try(
             PreparedStatement ps = co.prepareStatement(queryString);
         ){
@@ -150,10 +169,18 @@ public class ArchivioMov { //01
             
            ResultSet rs = ps.executeQuery();
             while(rs.next()) { //16
-                ol.add(new PieChart.Data(rs.getString("voce"), rs.getDouble("totale")));
+                
+                olNew.add(new PieChart.Data(rs.getString("voce"), 
+                        rs.getDouble("totale"))
+                );
             }
-          }catch (SQLException e) {System.err.println("aggiornamento "
-                  + "grafico non riuscito" + e.getMessage());}
+            ol.setAll(olNew);
+        }catch (SQLException e) {
+            System.err.println("aggiornamento grafico non riuscito "
+                    + e.getMessage() + " ");
+
+            e.printStackTrace();
+        }
     }
 
 }

@@ -13,7 +13,8 @@ public class GestoreLogXML {
             if(ValidaXML.valida(log.toString(), "log.xsd") == true)
                 oout.writeObject(log.toString());   
         } catch(IOException e) {
-            System.err.println("gestoreLog "+e.getMessage());
+            System.err.println("gestoreLog "+ e.getMessage());
+            e.printStackTrace();
         }
     }
     
