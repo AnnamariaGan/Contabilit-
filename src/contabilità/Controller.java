@@ -2,36 +2,34 @@
 package contabilità;
 
 public class Controller {
-    public CacheMovimento cacheMov;
+    final String  xml, xsd, fileCache;
+    Contabilità cont;
+    ConfigurazioneXML config;
+    CacheMovimento cache ;
     
-    public ConfigurazioneXML config;
-    public static GestoreLogXML gestorelog;
+    public Controller(Contabilità cont, String xml, String xsd, String fileCache){
+        this.xml = xml;
+        this.xsd = xsd;
+        this.fileCache = fileCache;
+     
+        this.cont = cont;
+    }
     
-   Controller(Contabilità cont){
-        cacheMov = new CacheMovimento(cont);
-        config = new ConfigurazioneXML(null,null);
-        gestorelog = new GestoreLogXML();
-    }
-   
-    public CacheMovimento accensione(String ipClient, String ipServer,
-            int portaServer, Contabilità cont, String xml, String xsd){
+    public CacheMovimento accensione(){
+        config = new ConfigurazioneXML(this.xml, this.xsd);
+        GestoreLogXML.creaLog("accensione", config.ipClient, config.ipServer, config.portaServer);
+        cache = CacheMovimento.carica(this.fileCache);
         
-        cacheMov.prelevaBin(cont);
-        cacheMov.saveBin(cont); 
-                
-        cacheMov.conservaTxt(cont);   
-        
-        config = new ConfigurazioneXML(xml, xsd);
-       
-        //gestorelog.creaLog("accensione", ipClient, ipServer,  portaServer);
-        return this.cacheMov;
-    }
+        return cache;
+    } 
 
-    public void chiusura(Contabilità cont,String ipClient,String ipServer,int portaServer ){ 
-      //   cacheMov.prelevaTxt(cont);
-         cacheMov.prelevaBin(cont);
-         cacheMov.saveBin(cont);
-         //null pointer EXECPTION!!!!!!
-        // gestorelog.creaLog("chiusura", ipClient, ipServer,  portaServer); 
+    public void chiusura(){ 
+         GestoreLogXML.creaLog("chiusura", config.ipClient, config.ipServer, config.portaServer);
+         CacheMovimento.salva(this.cont,this.fileCache);
     }
 }
+
+
+
+//ACCENSIONE: cache, log, configirazione
+//CHIUSURA: cache, log

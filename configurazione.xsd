@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+ 
+ <xs:element name="ConfigurazioneXML">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="dimTesto" type="xs:integer"/>
+        <xs:element name="dimAltezza" type="xs:integer"/>
+        <xs:element name="dimLarghezza" type="xs:integer"/>
+        <xs:element name="font" type="xs:string"/>
+        <xs:element name="coloreBackground" type="xs:string"/>
+      </xs:sequence>
+      
+      <xs:attribute name="numRighe"/>
+      <xs:attribute name="ipClient" type="xs:string"   use="required"/>
+      <xs:attribute name="ipServer" type="xs:string"   use="required"/>
+      <xs:attribute name="ipDatabase" type="xs:string"   use="required"/>
+      <xs:attribute name="portaServer" type="xs:integer"   use="required"/>
+      <xs:attribute name="portaDatabase" type="xs:integer"   use="required"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

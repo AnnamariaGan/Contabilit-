@@ -3,27 +3,37 @@ package contabilità;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.sql.Timestamp;
 
-public class GestoreLogXML {
-     private  void invia(RigaLogXML log, String ipServer, int portaServer) { //invia il log al server
-        try(Socket socket = new Socket(ipServer, portaServer);
+public class GestoreLogXML {  //00
+    private static final String XSD = "C:\\Users\\annam\\Documents\\Contabilità\\log.xsd";
+    private static void invia(RigaLogXML log, String ipServer, int portaServer) { //invia il log al server
+        try(Socket socket = new Socket(ipServer, portaServer);  //03
             ObjectOutputStream oout = new ObjectOutputStream(socket.getOutputStream()); 
         ) {
-            if(ValidaXML.valida(log.toString(), "log.xsd") == true)
-                oout.writeObject(log.toString());   
+            String xmlStr = log.toStringXML();
+            if(ValidaXML.validaStringa(xmlStr, XSD))
+                oout.writeObject(xmlStr);  
         } catch(IOException e) {
             System.err.println("gestoreLog "+ e.getMessage());
             e.printStackTrace();
         }
     }
     
-    public void creaLog(String evento, String ipClient, String ipServer, int portaServer) {
-        Timestamp tm = new Timestamp(System.currentTimeMillis());
-        RigaLogXML logxml = new RigaLogXML(evento, ipClient, tm, "My accounting!");
-        invia(logxml, ipServer, portaServer);
-       
+    public static void creaLog(String evento, String ipClient, String ipServer, int portaServer) {  //01
+        RigaLogXML logxml = new RigaLogXML(evento, ipClient, "My accounting!");
+        invia(logxml, ipServer, portaServer);  //02
     }
     
-  
 }
+
+/**
+Note: 
+* 00) La classe GestoreLogXML si occupa di creare una riga di log e inviarla al
+*     server dopo averla serializzata in stringa XML e validata correttamente.
+* 01) La funzione creaLog istanzia un oggetto di tipo RigaLogXML e invoca la
+*     funzione invia.
+* 02) La funzione invia ha il compito di inviare al server una nuova riga di log
+*     ogni qual volta che viene creata.
+* 03) Viene creato il Socket con il server, validata la stringa della riga di log
+*     e inviata al server.
+ */

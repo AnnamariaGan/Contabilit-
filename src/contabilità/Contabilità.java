@@ -20,10 +20,14 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
-import javafx.util.Callback;
+
 
 public class Contabilità extends Application {  //01
- 
+     private final static String
+        FILE_CONFIGURAZIONE = "C:\\Users\\annam\\Documents\\Contabilità\\configurazione.xml",
+        SCHEMA_CONFIGURAZIONE = "C:\\Users\\annam\\Documents\\Contabilità\\configurazione.xsd",
+        FILE_CACHE = "C:\\Users\\annam\\Documents\\Contabilità\\cache.bin";
+    
     DatePicker dataInizio = new DatePicker(); //02
     DatePicker dataFine = new DatePicker();     
     DatePicker dataNewMov = new DatePicker(); 
@@ -38,14 +42,8 @@ public class Contabilità extends Application {  //01
 
     Button cancella = new Button();
      
-    ObservableList<String> voceTypes = 
-    FXCollections.observableArrayList(
-        "Stipendio",
-        "Affitto",
-        "Cure Mediche",
-        "Spesa",
-        "Altro"
-    );
+    ObservableList<String> voceTypes =  FXCollections.observableArrayList("Stipendio",
+        "Affitto", "Cure Mediche", "Spesa", "Altro");
     final ComboBox<String> cbVoce = new ComboBox<String>(voceTypes);
     ObservableList<Movimento> voci = FXCollections.observableArrayList();   //questa per il grafico
 
@@ -54,30 +52,25 @@ public class Contabilità extends Application {  //01
     Movimento daCancellare = null;
     
     boolean validaMail(String email) { 
-            int atIndex = email.indexOf('@');
-            int dotIndex = email.indexOf('.',atIndex);
-            
-            if(atIndex != -1 && dotIndex != -1 && dotIndex < email.length()-1){
-               return true;
-            }else{
-                System.out.println("email non valida, riprova");
-            }
-            
-            return false;    
+        int atIndex = email.indexOf('@');
+        int dotIndex = email.indexOf('.',atIndex);
+        if(atIndex != -1 && dotIndex != -1 && dotIndex < email.length()-1){
+            return true;
+        }else{ System.out.println("email non valida, riprova"); }
+        return false;    
     }
     
     @Override
     public void start(Stage primaryStage) { //03
         
-        
         ObservableList<PieChart.Data> valueList;  //14
         valueList = FXCollections.observableArrayList( 
-             new PieChart.Data("Stipendio",10),   
-             new PieChart.Data("Altro",10),     
-             new PieChart.Data("Affitto",10 ),
-             new PieChart.Data("Viaggi",10 ),
-             new PieChart.Data("Cure mediche",10),
-             new PieChart.Data("Spesa",10)   //parametri di default
+            new PieChart.Data("Stipendio",10),   
+            new PieChart.Data("Altro",10),     
+            new PieChart.Data("Affitto",10 ),
+            new PieChart.Data("Viaggi",10 ),
+            new PieChart.Data("Cure mediche",10),
+            new PieChart.Data("Spesa",10)   //parametri di default
          );  
 
         PieChart pieChart = new PieChart(valueList); //15
@@ -87,13 +80,9 @@ public class Contabilità extends Application {  //01
             Tooltip.install(dato.getNode(), toolTip);
         });
 
-    
-        Contabilità cont = this; //04
-        Controller ctrl = new Controller(cont);
+        Controller ctrl = new Controller(this, FILE_CONFIGURAZIONE, SCHEMA_CONFIGURAZIONE, FILE_CACHE); //04
+        CacheMovimento cache = ctrl.accensione();
         ArchivioMov archivio = new ArchivioMov(ctrl.config.getIpDB(), ctrl.config.getPortaDB());
-        
-        dataFine.setValue(LocalDate.now()); // 06)
-        dataInizio.setValue(LocalDate.now().plusDays(-30));
 
         Label email = new Label("E-mail");
         email.setFont(new Font("Arial", 18));
@@ -104,7 +93,6 @@ public class Contabilità extends Application {  //01
         Label SaldoAVideo = new Label("SALDO: ");
         SaldoAVideo.setFont(new Font(ctrl.config.getFont(), 16));
         
-        //ObservableStringValue saldoAttualeOb = new ObservableStringValue(saldoAttuale);
         Label SaldoDaMostrare = new Label(saldoAttuale); 
         SaldoDaMostrare.setFont(new Font(ctrl.config.getFont(),16));
        
@@ -134,21 +122,17 @@ public class Contabilità extends Application {  //01
             @Override 
             public void handle(ActionEvent e) {
                 if(daCancellare != null) {
-                    
                     archivio.deleteMovimento(daCancellare, voci, valueList); //la voce selezionata
-                    voci.remove(daCancellare);
+                 //   voci.remove(daCancellare);  /questa proprio no
                     //tabella.getItems().removeAll(daCancellare);
-                    //saldoAttuale = "0";
                     saldoAttuale = archivio.calcolaSaldo(mail.getText()) + " €";
                     SaldoDaMostrare.setText(saldoAttuale);
                     tabella.getItems().clear();
-                    archivio.loadMovimento(voci, mail.getText(),
-                                dataInizio.getValue(), dataFine.getValue(),
-                                valueList);
+                    archivio.loadMovimento(voci, mail.getText(), dataInizio.getValue(),
+                            dataFine.getValue(), valueList);     //perche passo value list//////////////////////////////////
                     
-                    ctrl.gestorelog.creaLog("cancella", 
-                        ctrl.config.getIpClient(), ctrl.config.getIpServer(),
-                        ctrl.config.getPortaServer());
+                    GestoreLogXML.creaLog("cancella", ctrl.config.getIpClient(),
+                        ctrl.config.getIpServer(), ctrl.config.getPortaServer());
                     
                     System.out.println("cancella handled");
                     cancella.setDisable(true);
@@ -166,35 +150,28 @@ public class Contabilità extends Application {  //01
                 String utente = mail.getText();
                 validaMail(utente);
                 // TO DO: aggiungere l'utente al db se non e` presente
-                String tipo = "u";
+                String tipo = "u";  
                 if( entrata.isSelected() ){
                     tipo = "e";
                 }
-                String voce = (String) cbVoce.getValue(); //conevrtito in stringa
+                String voce = (String) cbVoce.getValue(); 
                 
                 try {
-                    // TO DO: handle eventually $ or eur users' inputs
                     double imp = Double.parseDouble(importo.getText());;
-                    String date = dataNewMov.getValue()
-                            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-                    Movimento newMov = new Movimento(date, imp, voce, utente,
-                            tipo);
+                    String date = dataNewMov.getValue().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+                    Movimento newMov = new Movimento(date, imp, voce, utente, tipo);
                     
                     archivio.setMovimento(newMov, voci, valueList);
                     saldoAttuale = archivio.calcolaSaldo(utente) + " €";
                     SaldoDaMostrare.setText(saldoAttuale);
                     
                     tabella.getItems().clear();
-                    archivio.loadMovimento(voci, mail.getText(),
-                                dataInizio.getValue(), dataFine.getValue(),
-                                valueList);
+                    archivio.loadMovimento(voci, mail.getText(), dataInizio.getValue(),
+                        dataFine.getValue(), valueList);   
                    
-                    ctrl.gestorelog.creaLog("inserisci", ctrl.config
-                            .getIpClient(), ctrl.config.getIpServer(),
-                            ctrl.config.getPortaServer());
-                    
-                } catch (NullPointerException 
-                        | NumberFormatException exception) {
+                    GestoreLogXML.creaLog("inserisci", ctrl.config.getIpClient(),
+                        ctrl.config.getIpServer(), ctrl.config.getPortaServer());    
+                } catch (NullPointerException  | NumberFormatException exception) {
                     System.out.println(exception.getMessage());
                     exception.printStackTrace();
                 };
@@ -214,9 +191,8 @@ public class Contabilità extends Application {  //01
                 SaldoDaMostrare.setText(saldoAttuale);
                 mail.clear();
                 
-                ctrl.gestorelog.creaLog("svuota", ctrl.config.getIpClient(),
-                    ctrl.config.getIpServer(),  ctrl.config.getPortaServer());
-             
+                GestoreLogXML.creaLog("svuota", ctrl.config.getIpClient(),
+                   ctrl.config.getIpServer(),  ctrl.config.getPortaServer());
             }
         });
 
@@ -232,31 +208,25 @@ public class Contabilità extends Application {  //01
                 uscita.setSelected(false);
                 cancella.setDisable(true);
      
-                ctrl.gestorelog.creaLog("annulla", ctrl.config.getIpClient(), 
-                        ctrl.config.getIpServer(),  ctrl.config.getPortaServer());
+                GestoreLogXML.creaLog("annulla", ctrl.config.getIpClient(), 
+                    ctrl.config.getIpServer(),  ctrl.config.getPortaServer());
              }
          });
-        
         
         mail.setOnKeyPressed(new EventHandler<KeyEvent>(){ //11
            @Override 
             public void handle(KeyEvent kevent){
                 if(kevent.getCode().equals(KeyCode.ENTER)){
                     String email = mail.getText();
-                    // svuota in ogni caso la tabella
                     tabella.getItems().clear();
                     if (validaMail(email)) {
-                        // precondizione: dataInizio e dataFine dovrebbero
-                        // gia` essere not null
                         archivio.loadMovimento(voci, email,
                                 dataInizio.getValue(), dataFine.getValue(),
                                 valueList);
                         saldoAttuale = archivio.calcolaSaldo(mail.getText())
                                 + " €";
                         SaldoDaMostrare.setText(saldoAttuale);
-                        
                     }
-               
                 } 
             } 
         });
@@ -274,39 +244,33 @@ public class Contabilità extends Application {  //01
         importoCol.setPrefWidth(150);
        
         tabella.getColumns().addAll(dataCol, categoriaCol, importoCol);
-        
+     
+        tabella.setFixedCellSize(25); 
+        tabella.prefHeightProperty().set((ctrl.config.getNumRighe() + 1) * 25); 
+        tabella.setStyle("-fx-background-color:" + ctrl.config.getColor());
+          
         importoCol.setCellFactory(column -> {
             return new TableCell<Movimento, Double>() {
                 @Override
                 protected void updateItem(Double item, boolean empty) {
                     super.updateItem(item, empty); 
                     if (item == null || empty) {
-                    //If the cell is empty
                         setText(null);
                         setStyle("");
                     } else { 
-                    //If the cell is not empty
                         setText(item.toString()); 
                     //getting info of this row's Movimento
-                        Movimento mov = getTableView().getItems()
-                        .get(getIndex());
-                        //System.out.println(mov);
-
+                        Movimento mov = getTableView().getItems().get(getIndex());
                         if (mov.getTipo().equals("u")) {
-                            //System.out.println(mov.getTipo());
                             setTextFill(Color.RED);                                                   
                         } else {
-                            //System.out.println(mov.getTipo());
                             setTextFill(Color.GREEN);
                         }                                                                                                                                                                                                    
                     }
                 }
             };
         });
-      //  tabella.lookup(".scroll-bar:vertical");
-      //  tabella.setStyle(ctrl.config.getColor());
-      //  impostare il numro di rghe presneti in tabella con congif
-  
+   
         GridPane root = new GridPane(); //16
         root.add(email, 0, 0);
         root.add(mail, 1, 0);
@@ -338,9 +302,8 @@ public class Contabilità extends Application {  //01
         
         
         primaryStage.setOnCloseRequest((WindowEvent we) -> { //19
-          ctrl.chiusura(cont, ctrl.config.getIpClient(), ctrl.config.getIpServer(), 
-                   ctrl.config.getPortaServer()); //20
-          System.out.println("Closing...");
+            ctrl.chiusura(); //20
+            System.out.println("Closing...");
         });
         
         tabella.setOnMousePressed(new EventHandler<MouseEvent>() {
@@ -352,16 +315,38 @@ public class Contabilità extends Application {  //01
                             .getSelectedItem();
                     
                     System.out.println("double click");
-                    
                 }
             }
         });
         
-        ctrl.accensione(ctrl.config.getIpClient(), ctrl.config.getIpServer(), 
-                ctrl.config.getPortaServer(), cont, "configurazione.xml", 
-                "configurazione.xsd").prelevaBin(this);
-     }
-   }
+        if(cache == null){ 
+            dataInizio.setValue(LocalDate.now().plusDays(-30)); //06
+            dataFine.setValue(LocalDate.now()); // 06) 
+        } else {
+            dataInizio.setValue(cache.getDataInizio());
+            dataFine.setValue(cache.getDataFine());
+            dataNewMov.setValue(cache.getDataMov());
+            saldoAttuale = cache.getSaldo();
+            mail.setText(cache.getMail());
+            cbVoce.getSelectionModel().select(cache.getVoce());
+            if(cache.getTipo().equals("e")){
+                entrata.fire();
+            } else {
+                uscita.fire();
+            }
+            importo.setText(cache.getImporto());
+            String mailUtil = cache.getMail();
+             // svuota in ogni caso la tabella
+             tabella.getItems().clear();
+            if (validaMail(mailUtil)) {
+                archivio.loadMovimento(voci, mailUtil,
+                         dataInizio.getValue(), dataFine.getValue(), valueList);
+                saldoAttuale = archivio.calcolaSaldo(mail.getText()) + " €";
+                SaldoDaMostrare.setText(saldoAttuale);  
+            }
+        }   
+    }
+}
 
 /*
 Note:

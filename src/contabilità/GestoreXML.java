@@ -1,30 +1,30 @@
-package contabilità; 
+ /* package contabilità; 
 
-import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.*;
 
 public class GestoreXML {
     
-    public static XStream creaStream(){
-        XStream xs = new XStream(); 
-        xs.useAttributeFor(ConfigurazioneXML.class, "font"); 
-        xs.useAttributeFor(ConfigurazioneXML.class, "dimTesto");
-        xs.useAttributeFor(ConfigurazioneXML.class, "dimLarghezza");
-        xs.useAttributeFor(ConfigurazioneXML.class, "dimAltezza");
-        xs.useAttributeFor(ConfigurazioneXML.class, "coloreBackground");
+   public XStream creaXStream(){//00
+        XStream xs = new XStream();  //stringa numero semplice e non cambia frequentemente 
         xs.useAttributeFor(ConfigurazioneXML.class, "numRighe");
         xs.useAttributeFor(ConfigurazioneXML.class, "ipClient");
-        xs.useAttributeFor(ConfigurazioneXML.class, "ipArchivio");
+        xs.useAttributeFor(ConfigurazioneXML.class, "ipDatabase");
+        xs.useAttributeFor(ConfigurazioneXML.class, "ipServer");
         xs.useAttributeFor(ConfigurazioneXML.class, "portaServer");
-        xs.useAttributeFor(ConfigurazioneXML.class, "portaArchivio");
+        xs.useAttributeFor(ConfigurazioneXML.class, "portaDatabase");
+        return xs ;
+    }   */
+  /*  
+    public static String toStringXML(ConfigurazioneXML c) { //01  //////////////////////////////////////////////ma mi serve bho
+        return creaXStream().toXML(c); //stringa xml
+    }
+    */
+// }
 
-        return xs;
-    }
-//questa mi serve se devo creare il file xml
-    public String toString(){
-        return creaStream().toXML(this); // da java a xml
-    }
-    
-    
-    //qua ci vogliono altre funzioni tipo quelle della gestione del file
-    
-}
+/**
+ * 00)Il metodo creaXStrem() ritorna lo stream di un oggetto di tipo
+ *  ConfigurazioneXML così da porter deserializzare e desializzare l'oggetto.
+ *  Ogni membro della classe viene considerato un attributo.
+   01) Il metodo toString() ritorna la stringa in xml di un oggetto di tipo
+   * ConfigurazioneXML utilizzando il metodo sopra descritto: creaXStrema().
+ */

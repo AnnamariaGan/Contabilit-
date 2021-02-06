@@ -10,23 +10,14 @@ public class Movimento {  //01
     private  SimpleStringProperty email;
     private  SimpleStringProperty tipo;
  
-    Movimento(String data, double importo, String voce, String email,  
-            String tipo) {      
+    Movimento(String data, double importo, String voce, String email, String tipo){      
         this.data = new SimpleStringProperty(data);
         this.importo = new SimpleDoubleProperty(importo);
         this.voce = new SimpleStringProperty(voce);
         this.email = new SimpleStringProperty(email);
         this.tipo = new SimpleStringProperty(tipo);
     }
-    /*
-    void copy(Movimento m) {      
-        this.data = new SimpleStringProperty(m.getData());
-        this.importo = new SimpleDoubleProperty(m.getImporto());
-        this.voce = new SimpleStringProperty(m.getVoce());
-        this.email = new SimpleStringProperty(m.getEmail());
-        this.tipo = new SimpleStringProperty(m.getTipo());
-    }
-    */
+    
     public String getData() { return data.get(); }  //03
     public Double getImporto() { return importo.get(); } 
     public String getVoce(){ return voce.get(); }

@@ -11,7 +11,7 @@ public class ServerMov {
     private static int n = 0; 
     
     public static void main(String[] args) {
-        try ( ServerSocket servs = new ServerSocket(8080, 7) ){ //01
+        try ( ServerSocket servs = new ServerSocket(5939, 7) ){ //01
             while(true) {
                 Socket s = servs.accept();
                 Thread t = new Thread() {  //02
@@ -25,9 +25,7 @@ public class ServerMov {
                 t.start(); //04
             }
         } catch (IOException e) {e.printStackTrace();}
-    }
-
-    
+    }  
 }
 
 /*
