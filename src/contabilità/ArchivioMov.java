@@ -14,14 +14,10 @@ import javafx.scene.chart.PieChart;
 public class ArchivioMov { //01
     private static Connection co;
     private static Statement st;
-    //private static ObservableList<Movimento> mov;
     
     public ArchivioMov(String ip, int porta) { //02
         try{
-            co = DriverManager.getConnection("jdbc:mysql://"
-                    + ip
-                    + ":"
-                    + porta
+            co = DriverManager.getConnection("jdbc:mysql://" + ip + ":" + porta
                     + "/contabilita", "root","");
             if (co == null) {
                 System.err.println("in ArchivioMov.java.ArchivioMov co is null");
@@ -30,10 +26,7 @@ public class ArchivioMov { //01
             
             st = co.createStatement();
         }catch(SQLException e){
-            System.err.println(
-                "connessione non riuscita" +
-                e.getMessage()
-            );
+            System.err.println("connessione non riuscita" + e.getMessage());
         }
     } 
     
@@ -58,14 +51,12 @@ public class ArchivioMov { //01
                 voci.add(
                     new Movimento(rs.getString("data"), rs.getDouble("importo"),
                         rs.getString("voce"), rs.getString("nomeutente"), 
-                        rs.getString("tipo")
-                    )
+                        rs.getString("tipo"))
                 );
             }
             System.out.println("loadMovimento succesful");
             
-            loadGrafico(nomeUtente, dataInizio, dataFine, ol);
-            
+            loadGrafico(nomeUtente, dataInizio, dataFine, ol); 
         } catch (SQLException e) {
             System.err.println(e.getMessage());
             e.printStackTrace();
@@ -82,12 +73,11 @@ public class ArchivioMov { //01
                 "SELECT tipo, SUM(importo) as partial" 
                     + " from movimento " 
                     + " where nomeutente = ? "
-                    + " GROUP BY tipo ORDER BY tipo"
-            );        
+                    + " GROUP BY tipo ORDER BY tipo" );        
         ){
             ps.setString(1, mail);
             ResultSet rs = ps.executeQuery(); //09
-            System.out.println("calcola saldo:");// + rs.getString("saldo"));
+            System.out.println("calcola saldo:");
             Double sld = 0.0;
             
             while (rs.next()) {
@@ -104,12 +94,11 @@ public class ArchivioMov { //01
         }catch (SQLException e){
             System.err.println(e.getMessage());
             e.printStackTrace();
-            return "50/D1";             ///////////////////////////////////////////////////////////
+            return " ";     
         }
     } 
     
-    public void deleteMovimento(Movimento mv,ObservableList<Movimento> voci,  ///////////////////////////////////////////////////
-             ObservableList<PieChart.Data> ol) { //10                      // qua non mi serve passare voici e ol mhua
+    public void deleteMovimento(Movimento mv ) { //10                    
         if (co == null) {
             System.err.println("in ArchivioMov.java.deleteMovimento co is null");
             return;
@@ -127,17 +116,14 @@ public class ArchivioMov { //01
           
            System.out.println("rows affected: " + ps.executeUpdate());
            
-           //loadMovimento(voci, mv.getEmail(),inizio, fine, ol);// pieChart); 
-           //loadGrafico(mv.getEmail(),inizio , fine, ol);//pieChart);
-           //calcolaSaldo(mv.getEmail());
         } catch (SQLException e){
             System.err.println(e.getMessage());
             e.printStackTrace();
         }
     }
     
-    public void setMovimento(Movimento mv, ObservableList<Movimento> voci, 
-            ObservableList<PieChart.Data> ol) { //12
+    public void setMovimento(Movimento mv /*, ObservableList<Movimento> voci, 
+            ObservableList<PieChart.Data> ol*/) { //12
         if (co == null) {
             System.err.println("in ArchivioMov.java.setMovimento co is null");
             return;
@@ -167,8 +153,7 @@ public class ArchivioMov { //01
             return;
         }
          
-        ObservableList<PieChart.Data> olNew = 
-                FXCollections.observableArrayList();
+        ObservableList<PieChart.Data> olNew = FXCollections.observableArrayList();
         String queryString = "SELECT voce, SUM(importo) as totale " //15
                 + " FROM movimento "
                 + " WHERE nomeutente = ? " 
@@ -184,7 +169,6 @@ public class ArchivioMov { //01
            while(rs.next()) { //16
               olNew.add(new PieChart.Data(rs.getString("voce"), rs.getDouble("totale")));
            }
-           
            ol.setAll(olNew);
         }catch (SQLException e) {
             System.err.println("aggiornamento grafico non riuscito " + e.getMessage() + " ");
@@ -196,20 +180,23 @@ public class ArchivioMov { //01
 
 /*
 Note:
-01) Classe ArchivioMov che gestisce i dati del database, atteverso l`oggetto Movimento (classe bean).
-02) Costruttore di ArchivioMov che crea la connessione con il database, e istanzia la classe 
-    statement che produce ResultSet.
+01) Classe ArchivioMov che gestisce i dati del database, attraverso l`oggetto 
+    Movimento (classe bean).
+02) Costruttore di ArchivioMov che crea la connessione con il database, e istanzia
+    la classe  statement che produce il ResultSet.
 03) Metodo loadMovimento, si occupa di caricare un nuovo movimento del databse.
 04) Creata la query parametrica per l`interrogazione al database.
 05) Compilata la PreparedStatament con i parametri che condizionano la query.
-06) ResultSet della query. Si scorre poi il ResultSet e aggiunte le voci nella lista passata per argomento.
+06) ResultSet della query. Si scorre poi il ResultSet e aggiunte le voci nella
+    lista passata per argomento.
 
 07) Metodo calcolaSaldo, si occupa di calcolare il saldo.
 08) Creata la query parametrica.
 09) Il result set della query è il saldo.
 
 10) Metodo deleteMovimento, si occupa di eliminare dal database un movimento.
-11) Creata la query parametrica che elimina il movimento con gli stessi parametri di quello passato per argomento.
+11) Creata la query parametrica che elimina il movimento con gli stessi parametri 
+    di quello passato per argomento.
 
 12) Metodo che carica nel database un nuovo movimento.
 13) Creata la query per inserire il nuovo movimento.

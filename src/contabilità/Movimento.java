@@ -28,25 +28,15 @@ public class Movimento {  //01
     public void setImporto(Double i) { importo = new SimpleDoubleProperty(i); } 
     public void setVoce(String s){ voce = new SimpleStringProperty(s); }
     public void setEmail(String s) { email = new SimpleStringProperty(s); }
-    public void setTipo(String s){ tipo = new SimpleStringProperty(s); }
-    
-    //converte il movimento in stringa separata da +
-    // non so ancora a che mi serve pero perche per accensione e spagnimento non mi 
-    //serve questo ma creare una nuova stringa presa dai campi
-    public String toString() {  //05
-        String x = new String();
-        x = getData() + "+" + Double.toString(getImporto()) + "+" + getVoce() + "+" + getEmail() + "+" + getTipo();
-        return x;
-    }
-    
+    public void setTipo(String s){ tipo = new SimpleStringProperty(s); }   
 }
 
 
 /*
 Note:
 01) Classe bean, che serve per tenere sincronizzata l`interfaccia con i dati presenti nel database.
-02) Campi della classe Movimento dotati di osservabilita`.
+02) Campi di Movimento dotati di Simple Property.
 03) Medoti get che consentono di ottenere il valore di ogni singolo campo della classe.
 04) Metodi set che consentono di settare il valore di ogni singolo campo della classe.
-05) Funzione che converte in stringa l`oggetto movimento.
 */
+

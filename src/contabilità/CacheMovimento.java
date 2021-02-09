@@ -8,11 +8,11 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.time.LocalDate;
 
-public class CacheMovimento implements Serializable{  
+public class CacheMovimento implements Serializable{  //00
     private LocalDate dataInizio, dataFine, dataMov;
     private String saldo, email,voce, tipo, importo;
   
-    public CacheMovimento(Contabilità cont){ //00
+    public CacheMovimento(Contabilità cont){ 
        dataInizio = cont.dataInizio.getValue();
        dataFine = cont.dataFine.getValue();
        dataMov = cont.dataNewMov.getValue();
@@ -34,7 +34,7 @@ public class CacheMovimento implements Serializable{
         }
     }
     
-     public final static CacheMovimento carica(String file) {  //03
+     public final static CacheMovimento carica(String file) {  //03 
         try(ObjectInputStream oin = new ObjectInputStream(new FileInputStream(file))) { 
             return (CacheMovimento)oin.readObject(); 
         } catch(IOException | ClassNotFoundException e) {
@@ -43,7 +43,7 @@ public class CacheMovimento implements Serializable{
         return null; 
     }
    
-    public LocalDate getDataInizio() { return dataInizio; }
+    public LocalDate getDataInizio() { return dataInizio; } //04
     public LocalDate getDataFine() { return dataFine; }
     public LocalDate getDataMov(){ return dataMov; }
     public String getSaldo(){ return saldo; }
@@ -52,7 +52,7 @@ public class CacheMovimento implements Serializable{
     public String getTipo(){ return tipo; }
     public String getImporto(){ return importo; }
 
-    public void setDataInizio( LocalDate d){ dataInizio = d;}  
+    public void setDataInizio( LocalDate d){ dataInizio = d;}  //05
     public void setDataFine( LocalDate d){ dataFine = d;}
     public void setDataMov( LocalDate d){ dataMov = d;}
     public void setSaldo(String s){ saldo = s ;}
@@ -68,12 +68,17 @@ public class CacheMovimento implements Serializable{
        All'avvio deve caricare i dati inseriti dall'utente precedentemente.
        Alla chiusura deve salvare i dati che l'untente ha inserito prelevandoli 
        da Contabilita.
+       Implementa serializable, il che significa che le istanze di questa classe 
+       possono essere serializzabili, cioè le istanza possono essere salvate in
+       un file ad esempio.
  01) Il metodo salva(), salva la cache degli input in un file passato per 
     argomento prelevando i dai da contabilita.
  02) La scrittura sul file avviene creando nel frattempo un oggetto CacheMovimento.
- 03) Il metodo carica, carica appunto dal file binario la cahce degli input di una 
+ 03) Il metodo carica, carica appunto dal file binario la cache degli input di una 
     esecuzione precedente. Verrà cosi rispristinata l'interfaccia.
     Il metodo restituisce l'oggetto di tipo CacheMovimento 
     letto dal file. In caso di errore restituisce null.
+04) Metodi get.
+05) Metodi set.
 
 */
